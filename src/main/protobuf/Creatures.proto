@@ -1,0 +1,45 @@
+syntax = "proto3";
+package net.barbux.creatures2d.proto;
+
+message Bone {
+    uint32 node1 = 1;
+    uint32 node2 = 2;
+    double length = 3;
+}
+
+message Muscle {
+    uint32 node1 = 1;
+    uint32 node2 = 2;
+
+    double minLength = 3;
+    double maxLength = 4;
+
+    double period = 5;
+    double power = 6;
+}
+
+message Node {
+    uint32 nodeId = 1;
+    double startX = 2;
+    double startY = 3;
+    double weight = 4;
+    double size = 5;
+}
+
+message Creature {
+    uint32 creatureId = 1;
+    repeated Node nodes = 2;
+    repeated Bone bones = 3;
+    repeated Muscle muscles = 4;
+}
+
+message Generation {
+    uint32 generation = 1;
+    repeated Creature creatures = 2;
+}
+
+message Results {
+    uint32 generation = 1;
+    map<uint32, double> results = 2;
+}
+
