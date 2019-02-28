@@ -7,8 +7,8 @@ Note, you need protoc installed to build.
 On Ubuntu: apt-get install protobuf
 
 then:
-mvn compile
-mvn exec:java -Prun-generation
+* mvn compile
+* mvn exec:java -Prun-generation
 
 other exec:
-mvn exec:java -Pread-generation
+* mvn exec:java -Pread-generation
