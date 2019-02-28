@@ -42,7 +42,6 @@ public class SummaryViewController implements Initializable {
 
         NumberAxis yAxis = new NumberAxis(0, max, 1);
         yAxis.setLabel("How far");
-        evolution.getXAxis().setTick
 
         LineChart<Number, Number> linechart = new LineChart<>(xAxis, yAxis);
 
