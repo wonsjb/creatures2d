@@ -71,7 +71,7 @@ public class Main extends Application {
 
                     currentWorldTime += simulationStepNanos;
 
-                    if (currentWorldTime >= TimeUnit.MILLISECONDS.toNanos(100)) {
+                    if (currentWorldTime >= TimeUnit.SECONDS.toNanos(15)) {
                         // spend 15 seconds. Let's go to next generation
                         world.saveResultsToFile(file, generation);
                         world = world.getNextGeneration(random);
