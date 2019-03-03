@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.canvas.Canvas?>
 <?import javafx.scene.chart.BarChart?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.LineChart?>
 <?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Text?>
 
 <AnchorPane prefHeight="750.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1">
    <children>
@@ -25,6 +28,11 @@
               <NumberAxis fx:id="yAxis" layoutX="10.0" side="LEFT" />
           </yAxis>
       </LineChart>
-      <Slider fx:id="generationSelector" layoutX="500.0" layoutY="334.0" prefHeight="16.0" prefWidth="500.0" />
+      <Slider fx:id="generationSelector" layoutX="526.0" layoutY="326.0" prefHeight="16.0" prefWidth="474.0" />
+      <Canvas fx:id="creatureViewer" height="300.0" layoutY="50.0" width="500.0" />
+      <Text layoutX="14.0" layoutY="27.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Generation" />
+      <TextField fx:id="generationField" layoutX="94.0" layoutY="9.0" prefHeight="26.0" prefWidth="101.0" />
+      <Text layoutX="215.0" layoutY="27.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Creature" />
+      <TextField fx:id="creatureField" layoutX="286.0" layoutY="9.0" prefHeight="26.0" prefWidth="124.0" />
    </children>
 </AnchorPane>

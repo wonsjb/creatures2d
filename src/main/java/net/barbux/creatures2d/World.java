@@ -9,6 +9,7 @@ import javafx.scene.transform.Affine;
 import javafx.scene.transform.NonInvertibleTransformException;
 import net.barbux.creatures2d.proto.Creatures;
 
+import java.time.Duration;
 import java.util.*;
 
 public class World {
@@ -74,13 +75,20 @@ public class World {
     void render(Canvas canvas, double showx, double showy, int divideInX, int divideInY, CameraType cameraType) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
 
+        gc.setTransform(new Affine());
+
+        gc.setFill(Color.WHITE);
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+
+        gc.setFill(Color.BLACK);
+        gc.setFont(Font.font(10));
+        gc.fillText("Sim time: " + Duration.ofNanos(lastUpdateNanos).toString(), 0, 20);
+
+
+
         Affine t = getTransform(canvas.getWidth(), canvas.getHeight(),0, 0, 0, 0, showx, showy);
 
         gc.setTransform(t);
-
-        gc.setFill(Color.WHITE);
-        gc.fillRect(0, 0, showx, showy);
-
 
 
         int pos = 0;
