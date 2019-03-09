@@ -51,7 +51,7 @@ public class Main extends Application {
                 world = new World(random);
 
                 try {
-                    stream = new FileOutputStream("/home/wons/creatures.save");
+                    stream = new FileOutputStream(System.getProperty("user.home") + "/creatures.save");
                     file = CodedOutputStream.newInstance(stream);
                 } catch (Exception e) {
                     throw new RuntimeException(e);

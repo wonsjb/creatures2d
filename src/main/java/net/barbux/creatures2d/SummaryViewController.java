@@ -77,7 +77,7 @@ public class SummaryViewController implements Initializable {
 
         List<Creatures.Results> resultList = new ArrayList<>();
 
-        SerialUtil.readFile("/home/wons/creatures.save", g -> {
+        SerialUtil.readFile(System.getProperty("user.home") + "/creatures.save", g -> {
         }, resultList::add);
 
         double min = resultList.stream().mapToDouble(r -> r.getResultsMap().values().stream().mapToDouble(Double::doubleValue).max().getAsDouble()).min().getAsDouble();
@@ -212,7 +212,7 @@ public class SummaryViewController implements Initializable {
         }
 
 
-        SerialUtil.readFile("/home/wons/creatures.save", g -> {
+        SerialUtil.readFile(System.getProperty("user.home") + "/creatures.save", g -> {
             if (g.getGeneration() == generationToShow) {
                 for (Creatures.Creature creature : g.getCreaturesList()) {
                     if (creature.getCreatureId() == creatureToShow) {
