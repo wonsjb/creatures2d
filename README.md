@@ -12,3 +12,6 @@ then:
 
 other exec:
 * mvn exec:java -Psummary
+
+Screenshot:
+![Screenshot](/Screenshot.png)
