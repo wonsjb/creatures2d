@@ -11,4 +11,4 @@ then:
 * mvn exec:java -Prun-generation
 
 other exec:
-* mvn exec:java -Pread-generation
+* mvn exec:java -Psummary
