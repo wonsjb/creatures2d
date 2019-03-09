@@ -36,6 +36,14 @@ public class World {
         this.creatures.addAll(creatures);
     }
 
+    public World clone() {
+        World world = new World();
+        for (Creature creature : creatures) {
+            world.creatures.add(creature.clone());
+        }
+        return world;
+    }
+
     World getNextGeneration(Random random) {
         creatures.sort(Collections.reverseOrder(Comparator.comparing(Creature::getFitness)));
         World newWord = new World();

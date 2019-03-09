@@ -4,11 +4,15 @@ import javafx.animation.AnimationTimer;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Point2D;
 import javafx.print.Collation;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.chart.*;
+import javafx.scene.control.Button;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
+import javafx.scene.transform.Affine;
 import net.barbux.creatures2d.proto.Creatures;
 
 import java.net.URL;
@@ -48,7 +52,25 @@ public class SummaryViewController implements Initializable {
     @FXML
     Canvas creatureViewer;
 
-    AnimationTimer animationTimer;
+    @FXML
+    Button restartButton;
+
+    @FXML
+    Button spiderButton;
+
+    @FXML
+    Button loadButton;
+
+    @FXML
+    Button viewButton;
+
+    @FXML
+    Canvas editCanvas;
+
+    WorldAnimator animator;
+
+    Creature currentCreature;
+    Creature editedCreature;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -120,6 +142,58 @@ public class SummaryViewController implements Initializable {
         creatureField.textProperty().addListener(g -> animateCreature());
         generationField.textProperty().addListener(g -> animateCreature());
 
+        restartButton.setOnAction(value -> {
+            if (animator != null) animator.reset();
+        });
+
+        spiderButton.setOnAction(value -> {
+            if (animator != null) {
+                animator.stop();
+            }
+            currentCreature = new Triangle2Spider();
+            World world = new World(Collections.singletonList(currentCreature.clone()));
+            animator = new WorldAnimator(world, creatureViewer);
+            animator.start();
+        });
+
+        loadButton.setOnAction(value -> {
+            editedCreature = currentCreature.clone();
+            World world = new World(Collections.singletonList(editedCreature));
+            world.render(editCanvas, 1, 1, 1, 1, World.CameraType.FIXED);
+
+        });
+
+        editCanvas.setOnMouseClicked(mouseEvent -> {
+            System.out.println(mouseEvent.getX() + " " + mouseEvent.getY());
+            GraphicsContext gc = editCanvas.getGraphicsContext2D();
+            Affine transform = new Affine(gc.getTransform());
+            try {
+                transform.invert();
+            } catch (Exception e) {
+
+            }
+            Point2D point = transform.transform(mouseEvent.getX(), mouseEvent.getY());
+
+            double x = point.getX() / 100.0;
+            double y = -point.getY() / 100.0;
+            System.out.println(x + " " + y);
+
+            editedCreature.allNodes.add(new Creature.Node(editedCreature.allNodes.size(), x, y));
+
+            World world = new World(Collections.singletonList(editedCreature));
+            world.render(editCanvas, 1, 1, 1, 1, World.CameraType.FIXED);
+        });
+
+        viewButton.setOnAction(value -> {
+            if (animator != null) {
+                animator.stop();
+            }
+            currentCreature = editedCreature.clone();
+            World world = new World(Collections.singletonList(currentCreature.clone()));
+            animator = new WorldAnimator(world, creatureViewer);
+            animator.start();
+        });
+
     }
 
     void animateCreature()
@@ -133,17 +207,16 @@ public class SummaryViewController implements Initializable {
         } catch (Exception e) {
             return;
         }
-        if (animationTimer != null) {
-            animationTimer.stop();
+        if (animator != null) {
+            animator.stop();
         }
 
-        AtomicReference<Creatures.Creature> creatureRef = new AtomicReference<>();
 
         SerialUtil.readFile("/home/wons/creatures.save", g -> {
             if (g.getGeneration() == generationToShow) {
                 for (Creatures.Creature creature : g.getCreaturesList()) {
                     if (creature.getCreatureId() == creatureToShow) {
-                        creatureRef.set(creature);
+                        currentCreature = Creature.deserialize(creature);
                         break;
                     }
                 }
@@ -151,42 +224,11 @@ public class SummaryViewController implements Initializable {
         }, r -> {
         });
 
-        World world = new World(Collections.singletonList(Creature.deserialize(creatureRef.get())));
+        World world = new World(Collections.singletonList(currentCreature.clone()));
 
-        final long simulationStepNanos = 100_000L;
+        animator = new WorldAnimator(world, creatureViewer);
 
-        animationTimer = new AnimationTimer() {
-            long lastTimeRendered = 0;
-            long lastSimTimeRendered = 0;
-            long firstRunTime = 0;
-            long currentWorldTime = 0;
-            double speed = 1.0;
-
-            @Override
-            public void handle(long currentTimeNanos) {
-                if (firstRunTime == 0) {
-                    firstRunTime = currentTimeNanos;
-                }
-                long simulationTime = (long)((currentTimeNanos - firstRunTime) * speed);
-                while (currentWorldTime < simulationTime) {
-                    world.update(currentWorldTime);
-
-                    currentWorldTime += simulationStepNanos;
-
-                    if (System.nanoTime() > currentTimeNanos + 100_000_000L) {
-                        break;
-                    }
-                }
-
-                long nanoTime = System.nanoTime();
-                if (nanoTime - lastTimeRendered > 10_000_000L) {
-                    lastTimeRendered = nanoTime;
-                    lastSimTimeRendered = currentWorldTime;
-                    world.render(creatureViewer,5, 3, 1, 1, World.CameraType.FOLLOW_CENTER);
-                }
-            }
-        };
-        animationTimer.start();
+        animator.start();
     }
 
     private void setHistogramData(Creatures.Results generationToShow) {
