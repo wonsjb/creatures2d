@@ -43,7 +43,7 @@ public class WorldAnimator {
                 if (nanoTime - lastTimeRendered > 10_000_000L) {
                     lastTimeRendered = nanoTime;
                     lastSimTimeRendered = currentWorldTime;
-                    animatedWorld.render(canvas,5, 3, 1, 1, World.CameraType.FOLLOW_CENTER);
+                    animatedWorld.render(canvas,5, 3, 1, 1, World.CameraType.FOLLOW_CENTER, true);
                 }
             }
         };

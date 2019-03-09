@@ -12,6 +12,9 @@ import javafx.scene.chart.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.scene.transform.Affine;
 import net.barbux.creatures2d.proto.Creatures;
 
@@ -19,58 +22,51 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class SummaryViewController implements Initializable {
 
-    @FXML
-    private NumberAxis xAxis ;
-
-    @FXML
-    private NumberAxis yAxis;
-
-    @FXML
-    LineChart<Number, Number> evolution;
-
-    @FXML
-    CategoryAxis histoCategoryAxis;
-
-    @FXML
-    NumberAxis histoValues;
-
-    @FXML
-    BarChart<String, Number> histogram;
-
-    @FXML
-    Slider generationSelector;
-
-    @FXML
-    TextField generationField;
-
-    @FXML
-    TextField creatureField;
-
-    @FXML
-    Canvas creatureViewer;
-
-    @FXML
-    Button restartButton;
-
-    @FXML
-    Button spiderButton;
-
-    @FXML
-    Button loadButton;
-
-    @FXML
-    Button viewButton;
-
-    @FXML
-    Canvas editCanvas;
+    @FXML private NumberAxis xAxis ;
+    @FXML private NumberAxis yAxis;
+    @FXML LineChart<Number, Number> evolution;
+    @FXML CategoryAxis histoCategoryAxis;
+    @FXML NumberAxis histoValues;
+    @FXML BarChart<String, Number> histogram;
+    @FXML Slider generationSelector;
+    @FXML TextField generationField;
+    @FXML TextField creatureField;
+    @FXML Canvas creatureViewer;
+    @FXML Button restartButton;
+    @FXML Button spiderButton;
+    @FXML Button loadButton;
+    @FXML Button viewButton;
+    @FXML Canvas editCanvas;
+    @FXML Button modeButton;
+    @FXML Text modeText;
+    @FXML Button unselectButton;
+    @FXML Button addBoneButton;
+    @FXML Button deleteButton;
+    @FXML Button disconnectButton;
 
     WorldAnimator animator;
 
     Creature currentCreature;
     Creature editedCreature;
+
+    enum CurrentMode {
+        ADD_NODES("Add Nodes"),
+        SELECT_NODES("Select Nodes"),
+        MOVE_NODES("Move Nodes");
+
+        final String text;
+
+        CurrentMode(String text) {
+            this.text = text;
+        }
+    }
+
+    CurrentMode currentMode = CurrentMode.ADD_NODES;
+    Creature.Node movingNode;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -158,30 +154,46 @@ public class SummaryViewController implements Initializable {
 
         loadButton.setOnAction(value -> {
             editedCreature = currentCreature.clone();
-            World world = new World(Collections.singletonList(editedCreature));
-            world.render(editCanvas, 1, 1, 1, 1, World.CameraType.FIXED);
+            refreshEditor();
 
         });
 
         editCanvas.setOnMouseClicked(mouseEvent -> {
-            System.out.println(mouseEvent.getX() + " " + mouseEvent.getY());
-            GraphicsContext gc = editCanvas.getGraphicsContext2D();
-            Affine transform = new Affine(gc.getTransform());
-            try {
-                transform.invert();
-            } catch (Exception e) {
 
+            Point2D point = getMousePoint(mouseEvent);
+
+            if (currentMode == CurrentMode.ADD_NODES) {
+                editedCreature.allNodes.add(new Creature.Node(editedCreature.allNodes.size(), point.getX(), point.getY()));
+
+                refreshEditor();
+            } else if (currentMode == CurrentMode.MOVE_NODES) {
+                if (movingNode == null) {
+                    movingNode = findNode(point);
+                } else {
+                    movingNode = null;
+                }
+            } else if (currentMode == CurrentMode.SELECT_NODES) {
+                Creature.Node node = findNode(point);
+                if (node != null) {
+                    node.color = node.color.equals(Color.BROWN) ? Color.LIGHTGREEN : Color.BROWN;
+                    refreshEditor();
+                }
             }
-            Point2D point = transform.transform(mouseEvent.getX(), mouseEvent.getY());
+        });
 
-            double x = point.getX() / 100.0;
-            double y = -point.getY() / 100.0;
-            System.out.println(x + " " + y);
+        editCanvas.setOnMouseMoved(mouseEvent -> {
+            if (currentMode == CurrentMode.MOVE_NODES && movingNode != null) {
+                Point2D point = getMousePoint(mouseEvent);
 
-            editedCreature.allNodes.add(new Creature.Node(editedCreature.allNodes.size(), x, y));
+                movingNode.p.x = point.getX();
+                movingNode.p.y = point.getY();
+                movingNode.originalPos.x = point.getX();
+                movingNode.originalPos.y = point.getY();
 
-            World world = new World(Collections.singletonList(editedCreature));
-            world.render(editCanvas, 1, 1, 1, 1, World.CameraType.FIXED);
+                editedCreature.resizeBones();
+
+                refreshEditor();
+            }
         });
 
         viewButton.setOnAction(value -> {
@@ -194,6 +206,71 @@ public class SummaryViewController implements Initializable {
             animator.start();
         });
 
+        modeText.setText(currentMode.text);
+
+        modeButton.setOnAction(value -> {
+            currentMode = CurrentMode.values()[(currentMode.ordinal() + 1) % CurrentMode.values().length];
+            modeText.setText(currentMode.text);
+        });
+
+        unselectButton.setOnAction(value -> {
+            for (Creature.Node node : editedCreature.allNodes) {
+                node.color = Color.BROWN;
+            }
+            refreshEditor();
+        });
+
+        addBoneButton.setOnAction(value -> {
+            List<Creature.Node> selected = editedCreature.allNodes.stream().filter(n -> n.color.equals(Color.LIGHTGREEN)).collect(Collectors.toList());
+
+            if (selected.size() == 2) {
+                editedCreature.allBones.add(new Creature.Bone(selected.get(0), selected.get(1)));
+            }
+            refreshEditor();
+        });
+
+        deleteButton.setOnAction(value -> {
+            editedCreature.allBones.removeIf(connection -> connection.node1.color.equals(Color.LIGHTGREEN) || connection.node2.color.equals(Color.LIGHTGREEN));
+            editedCreature.allMuscles.removeIf(connection -> connection.node1.color.equals(Color.LIGHTGREEN) || connection.node2.color.equals(Color.LIGHTGREEN));
+            editedCreature.allNodes.removeIf(node -> node.color.equals(Color.LIGHTGREEN));
+            refreshEditor();
+        });
+
+        disconnectButton.setOnAction(value -> {
+            List<Creature.Node> selected = editedCreature.allNodes.stream().filter(n -> n.color.equals(Color.LIGHTGREEN)).collect(Collectors.toList());
+
+            if (selected.size() == 2) {
+                editedCreature.allBones.removeIf(bone -> (bone.node1.nodeId == selected.get(0).nodeId && bone.node2.nodeId == selected.get(1).nodeId)
+                        || (bone.node1.nodeId == selected.get(1).nodeId && bone.node2.nodeId == selected.get(0).nodeId));
+            }
+            refreshEditor();
+        });
+
+    }
+
+    private void refreshEditor() {
+        World world = new World(Collections.singletonList(editedCreature));
+        world.render(editCanvas, 1, 1, 1, 1, World.CameraType.FIXED, false);
+    }
+
+    private Creature.Node findNode(Point2D point) {
+        for (Creature.Node node : editedCreature.allNodes) {
+            if (Geometry.distance2(new Geometry.Vector(point), node.p) < (node.size * node.size)) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    Point2D getMousePoint(MouseEvent mouseEvent) {
+        GraphicsContext gc = editCanvas.getGraphicsContext2D();
+        Affine transform = new Affine(gc.getTransform());
+        try {
+            transform.invert();
+        } catch (Exception e) {
+
+        }
+        return transform.transform(mouseEvent.getX(), mouseEvent.getY());
     }
 
     void animateCreature()

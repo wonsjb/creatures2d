@@ -1,5 +1,7 @@
 package net.barbux.creatures2d;
 
+import javafx.geometry.Point2D;
+
 public class Geometry {
 
     final static double EPSILON = 1e-6;
@@ -11,6 +13,11 @@ public class Geometry {
         Vector(double x, double y) {
             this.x = x;
             this.y = y;
+        }
+
+        Vector(Point2D point) {
+            this.x = point.getX();
+            this.y = point.getY();
         }
 
         void plusEqual(Vector other, double scalar) {

@@ -21,6 +21,8 @@ public class Creature {
         final double weight;
         double savedEnergy;
 
+        Color color = Color.BROWN;
+
         Node(int id, double x, double y) {
             this(id, x, y, 1.0, 0.05);
         }
@@ -38,7 +40,9 @@ public class Creature {
         }
 
         public Node clone() {
-            return new Node(nodeId, originalPos.x, originalPos.y, weight, size);
+            Node result = new Node(nodeId, originalPos.x, originalPos.y, weight, size);
+            result.color = color;
+            return result;
         }
 
         double getEnergy() {
@@ -145,6 +149,13 @@ public class Creature {
     Creature() {
     }
 
+    void resizeBones() {
+        for (int i = 0; i < allBones.size(); ++i) {
+            Bone bone = allBones.get(i);
+            Bone newBone = new Bone(bone.node1, bone.node2);
+            allBones.set(i, newBone);
+        }
+    }
 
     void update(long nanos) {
         physics.update(nanos, this);
@@ -188,7 +199,7 @@ public class Creature {
         return new Geometry.Vector((maxx + minx) / 2, (maxy + miny) / 2);
     }
 
-    void render(GraphicsContext gc) {
+    void render(GraphicsContext gc, boolean showNumber) {
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(0.01);
         for (Bone bone : allBones) {
@@ -201,14 +212,19 @@ public class Creature {
             gc.strokeLine(muscle.node1.p.x, muscle.node1.p.y, muscle.node2.p.x, muscle.node2.p.y);
         }
 
-        gc.setFill(Color.BROWN);
         for (Node node : allNodes) {
+            gc.setFill(node.color);
             gc.fillOval(node.p.x - node.size / 2, node.p.y - node.size / 2, node.size, node.size);
         }
 
-        gc.setFont(Font.font(10));
-        gc.scale(0.01, -0.01);
-        gc.fillText(Integer.toString(creatureId), 0, -10);
+        if (showNumber) {
+            gc.save();
+            gc.setFill(Color.BLACK);
+            gc.setFont(Font.font(10));
+            gc.scale(0.01, -0.01);
+            gc.fillText(Integer.toString(creatureId), 0, -10);
+            gc.restore();
+        }
 
     }
 

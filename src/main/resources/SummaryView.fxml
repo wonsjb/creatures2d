@@ -40,8 +40,13 @@
       <Canvas fx:id="editCanvas" height="300.0" layoutX="687.0" layoutY="17.0" width="300.0" />
       <Text layoutX="547.0" layoutY="27.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Editor" />
       <Button fx:id="modeButton" layoutX="516.0" layoutY="43.0" mnemonicParsing="false" text="Mode" />
-      <Text fx:id="actionText" layoutX="586.0" layoutY="61.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Add nodes" />
+      <Text fx:id="modeText" layoutX="586.0" layoutY="61.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Add nodes" />
       <Button fx:id="loadButton" layoutX="516.0" layoutY="80.0" mnemonicParsing="false" text="Load" />
       <Button fx:id="viewButton" layoutX="577.0" layoutY="80.0" mnemonicParsing="false" text="View" />
+      <Button fx:id="addBoneButton" layoutX="516.0" layoutY="141.0" mnemonicParsing="false" text="Add Bone" />
+      <Button fx:id="deleteButton" layoutX="516.0" layoutY="173.0" mnemonicParsing="false" text="Delete" />
+      <Text layoutX="556.0" layoutY="132.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Selected:" />
+      <Button fx:id="disconnectButton" layoutX="516.0" layoutY="206.0" mnemonicParsing="false" text="Disconnect" />
+      <Button fx:id="unselectButton" layoutX="516.0" layoutY="241.0" mnemonicParsing="false" text="Unselect" />
    </children>
 </AnchorPane>

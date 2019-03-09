@@ -80,7 +80,7 @@ public class World {
         FOLLOW_CENTER
     }
 
-    void render(Canvas canvas, double showx, double showy, int divideInX, int divideInY, CameraType cameraType) {
+    void render(Canvas canvas, double showx, double showy, int divideInX, int divideInY, CameraType cameraType, boolean showNumberAndRuler) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
 
         gc.setTransform(new Affine());
@@ -88,9 +88,11 @@ public class World {
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
-        gc.setFill(Color.BLACK);
-        gc.setFont(Font.font(10));
-        gc.fillText("Sim time: " + Duration.ofNanos(lastUpdateNanos).toString(), 0, 20);
+        if (showNumberAndRuler) {
+            gc.setFill(Color.BLACK);
+            gc.setFont(Font.font(10));
+            gc.fillText("Sim time: " + Duration.ofNanos(lastUpdateNanos).toString(), 0, 20);
+        }
 
 
 
@@ -102,20 +104,22 @@ public class World {
         int pos = 0;
         creatures.sort(Collections.reverseOrder(Comparator.comparing(Creature::getFitness)));
         for (Creature creature : creatures) {
-            switch (cameraType) {
-                case FIXED:
-                    gc.setTransform(getTransform(canvas.getWidth()/divideInX, canvas.getHeight() / divideInY, 0, -0.05,pos % divideInX, (pos / divideInX) % divideInY, showx, showy));
-                    drawRuler(gc, 0, showx);
-                    break;
-                case FOLLOW_CENTER:
-                    Geometry.Vector center = creature.getCenter();
-                    gc.setTransform(getTransform(canvas.getWidth()/divideInX, canvas.getHeight() / divideInY, center.x - (showx / 2), -0.05,pos % divideInX, (pos / divideInX) % divideInY, showx, showy));
-                    drawRuler(gc, (int)(center.x - showx), center.x + showx);
-                    break;
+            if (showNumberAndRuler) {
+                switch (cameraType) {
+                    case FIXED:
+                        gc.setTransform(getTransform(canvas.getWidth() / divideInX, canvas.getHeight() / divideInY, 0, -0.05, pos % divideInX, (pos / divideInX) % divideInY, showx, showy));
+                        drawRuler(gc, 0, showx);
+                        break;
+                    case FOLLOW_CENTER:
+                        Geometry.Vector center = creature.getCenter();
+                        gc.setTransform(getTransform(canvas.getWidth() / divideInX, canvas.getHeight() / divideInY, center.x - (showx / 2), -0.05, pos % divideInX, (pos / divideInX) % divideInY, showx, showy));
+                        drawRuler(gc, (int) (center.x - showx), center.x + showx);
+                        break;
+                }
             }
 
 
-            creature.render(gc);
+            creature.render(gc, showNumberAndRuler);
 
             ++pos;
         }

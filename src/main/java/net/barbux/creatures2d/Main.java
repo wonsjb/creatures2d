@@ -100,7 +100,7 @@ public class Main extends Application {
                     lastTimeRendered = nanoTime;
                     lastSimTimeRendered = currentWorldTime;
 
-                    world.render(canvas, 2.0, 1.5, 50, 40, World.CameraType.FIXED);
+                    world.render(canvas, 2.0, 1.5, 50, 40, World.CameraType.FIXED, true);
                     System.out.println("Generation[" + generation + "] Current sim time : " +
                             Duration.ofNanos(currentWorldTime) + ", " + fps + " fps, sim speed : " + simSpeed + "% , Best creature: " +
                             world.creatures.get(0).creatureId + " with " + world.creatures.get(0).getFitness() + " m");
