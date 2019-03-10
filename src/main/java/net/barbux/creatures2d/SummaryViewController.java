@@ -10,6 +10,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.chart.*;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
@@ -22,6 +23,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class SummaryViewController implements Initializable {
@@ -41,8 +43,7 @@ public class SummaryViewController implements Initializable {
     @FXML Button loadButton;
     @FXML Button viewButton;
     @FXML Canvas editCanvas;
-    @FXML Button modeButton;
-    @FXML Text modeText;
+    @FXML ChoiceBox<CurrentMode> modeChoiceBox;
     @FXML Button unselectButton;
     @FXML Button addBoneButton;
     @FXML Button deleteButton;
@@ -52,6 +53,8 @@ public class SummaryViewController implements Initializable {
 
     Creature currentCreature;
     Creature editedCreature;
+
+    final Supplier<Physics> physicsSupplier = PhysicsWithBoneAsSpring::new;
 
     enum CurrentMode {
         ADD_NODES("Add Nodes"),
@@ -63,9 +66,13 @@ public class SummaryViewController implements Initializable {
         CurrentMode(String text) {
             this.text = text;
         }
+
+        @Override
+        public String toString() {
+            return text;
+        }
     }
 
-    CurrentMode currentMode = CurrentMode.ADD_NODES;
     Creature.Node movingNode;
 
     @Override
@@ -147,7 +154,7 @@ public class SummaryViewController implements Initializable {
                 animator.stop();
             }
             currentCreature = new Triangle2Spider();
-            World world = new World(Collections.singletonList(currentCreature.clone()));
+            World world = new World(physicsSupplier, Collections.singletonList(currentCreature.clone()));
             animator = new WorldAnimator(world, creatureViewer);
             animator.start();
         });
@@ -162,27 +169,27 @@ public class SummaryViewController implements Initializable {
 
             Point2D point = getMousePoint(mouseEvent);
 
-            if (currentMode == CurrentMode.ADD_NODES) {
-                editedCreature.allNodes.add(new Creature.Node(editedCreature.allNodes.size(), point.getX(), point.getY()));
+            if (modeChoiceBox.getValue() == CurrentMode.ADD_NODES) {
+                editedCreature.allNodes.add(new Creature.Node(point.getX(), point.getY()));
 
                 refreshEditor();
-            } else if (currentMode == CurrentMode.MOVE_NODES) {
+            } else if (modeChoiceBox.getValue() == CurrentMode.MOVE_NODES) {
                 if (movingNode == null) {
                     movingNode = findNode(point);
                 } else {
                     movingNode = null;
                 }
-            } else if (currentMode == CurrentMode.SELECT_NODES) {
+            } else if (modeChoiceBox.getValue() == CurrentMode.SELECT_NODES) {
                 Creature.Node node = findNode(point);
                 if (node != null) {
-                    node.color = node.color.equals(Color.BROWN) ? Color.LIGHTGREEN : Color.BROWN;
+                    node.color = node.color.equals(Color.LIGHTGREEN) ? Color.BROWN : Color.LIGHTGREEN;
                     refreshEditor();
                 }
             }
         });
 
         editCanvas.setOnMouseMoved(mouseEvent -> {
-            if (currentMode == CurrentMode.MOVE_NODES && movingNode != null) {
+            if (modeChoiceBox.getValue() == CurrentMode.MOVE_NODES && movingNode != null) {
                 Point2D point = getMousePoint(mouseEvent);
 
                 movingNode.p.x = point.getX();
@@ -197,21 +204,19 @@ public class SummaryViewController implements Initializable {
         });
 
         viewButton.setOnAction(value -> {
+            if (editedCreature == null) {
+                return;
+            }
             if (animator != null) {
                 animator.stop();
             }
             currentCreature = editedCreature.clone();
-            World world = new World(Collections.singletonList(currentCreature.clone()));
+            World world = new World(physicsSupplier, Collections.singletonList(currentCreature.clone()));
             animator = new WorldAnimator(world, creatureViewer);
             animator.start();
         });
 
-        modeText.setText(currentMode.text);
-
-        modeButton.setOnAction(value -> {
-            currentMode = CurrentMode.values()[(currentMode.ordinal() + 1) % CurrentMode.values().length];
-            modeText.setText(currentMode.text);
-        });
+        modeChoiceBox.getItems().addAll(CurrentMode.values());
 
         unselectButton.setOnAction(value -> {
             for (Creature.Node node : editedCreature.allNodes) {
@@ -230,8 +235,6 @@ public class SummaryViewController implements Initializable {
         });
 
         deleteButton.setOnAction(value -> {
-            editedCreature.allBones.removeIf(connection -> connection.node1.color.equals(Color.LIGHTGREEN) || connection.node2.color.equals(Color.LIGHTGREEN));
-            editedCreature.allMuscles.removeIf(connection -> connection.node1.color.equals(Color.LIGHTGREEN) || connection.node2.color.equals(Color.LIGHTGREEN));
             editedCreature.allNodes.removeIf(node -> node.color.equals(Color.LIGHTGREEN));
             refreshEditor();
         });
@@ -249,7 +252,8 @@ public class SummaryViewController implements Initializable {
     }
 
     private void refreshEditor() {
-        World world = new World(Collections.singletonList(editedCreature));
+        World world = new World(PhysicsWithSolidBones::new, Collections.singletonList(editedCreature));
+        world.initializePhysics();
         world.render(editCanvas, 1, 1, 1, 1, World.CameraType.FIXED, false);
     }
 
@@ -301,7 +305,7 @@ public class SummaryViewController implements Initializable {
         }, r -> {
         });
 
-        World world = new World(Collections.singletonList(currentCreature.clone()));
+        World world = new World(physicsSupplier, Collections.singletonList(currentCreature.clone()));
 
         animator = new WorldAnimator(world, creatureViewer);
 

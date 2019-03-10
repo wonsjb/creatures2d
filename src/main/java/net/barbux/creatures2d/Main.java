@@ -48,7 +48,7 @@ public class Main extends Application {
             final CodedOutputStream file;
             final FileOutputStream stream;
             {
-                world = new World(random);
+                world = new World(PhysicsWithBoneAsSpring::new, random);
 
                 try {
                     stream = new FileOutputStream(System.getProperty("user.home") + "/creatures.save");

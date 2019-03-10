@@ -7,16 +7,14 @@ public class Mutator {
     public boolean mutate(Random random, Creature creature) {
         // 1% chance new node
         if (random.nextDouble() < 0.05) {
-            Creature.Node newNode = new Creature.Node(creature.allNodes.size(), random.nextDouble(), random.nextDouble());
+            Creature.Node newNode = new Creature.Node(random.nextDouble(), random.nextDouble());
             creature.addRandomConnection(newNode, creature.allNodes.get(random.nextInt(creature.allNodes.size())), random);
             creature.allNodes.add(newNode);
         }
 
         // 1% change lose node
         if (random.nextDouble() < 0.05) {
-            Creature.Node removal = creature.allNodes.remove(random.nextInt(creature.allNodes.size()));
-            creature.allBones.removeIf(bone -> bone.node1 == removal || bone.node2 == removal);
-            creature.allMuscles.removeIf(muscle -> muscle.node1 == removal || muscle.node2 == removal);
+            creature.allNodes.remove(random.nextInt(creature.allNodes.size()));
         }
 
         // all muscle have a 20% change of changing period and length by up to 10%

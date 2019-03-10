@@ -35,7 +35,7 @@ public class RandomCreature extends Creature {
         this.random = random;
         int numberOfNode = 3 + random.nextInt(8);
         for (int i = 0; i < numberOfNode; ++i) {
-            Node node = new Node(i, random.nextDouble(), random.nextDouble());
+            Node node = new Node(random.nextDouble(), random.nextDouble());
             allNodes.add(node);
         }
         List<PairOfNode> allPairs = new ArrayList<>((numberOfNode - 1) * (numberOfNode - 2));

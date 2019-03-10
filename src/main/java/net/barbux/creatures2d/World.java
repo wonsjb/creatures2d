@@ -11,14 +11,16 @@ import net.barbux.creatures2d.proto.Creatures;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.function.Supplier;
 
 public class World {
     final List<Creature> creatures = new ArrayList<>();
-
+    final Supplier<Physics> physicsSupplier;
 
     long lastUpdateNanos;
 
-    World(Random random) {
+    World(Supplier<Physics> physicsSupplier, Random random) {
+        this.physicsSupplier = physicsSupplier;
         for (int i = 0; i < 2000; ++i) {
             Creature creature = new RandomCreature(random);
             creature.creatureId = i;
@@ -27,17 +29,19 @@ public class World {
         lastUpdateNanos = 0;
     }
 
-    World() {
+    World(Supplier<Physics> physicsSupplier) {
+        this.physicsSupplier = physicsSupplier;
         lastUpdateNanos = 0;
     }
 
-    World(Collection<Creature> creatures) {
+    World(Supplier<Physics> physicsSupplier, Collection<Creature> creatures) {
+        this.physicsSupplier = physicsSupplier;
         lastUpdateNanos = 0;
         this.creatures.addAll(creatures);
     }
 
     public World clone() {
-        World world = new World();
+        World world = new World(physicsSupplier);
         for (Creature creature : creatures) {
             world.creatures.add(creature.clone());
         }
@@ -46,7 +50,7 @@ public class World {
 
     World getNextGeneration(Random random) {
         creatures.sort(Collections.reverseOrder(Comparator.comparing(Creature::getFitness)));
-        World newWord = new World();
+        World newWord = new World(physicsSupplier);
         for (int i = 0; i < creatures.size() / 2; ++i) {
             Creature creature = creatures.get(i).clone();
             newWord.creatures.add(creature);
@@ -65,7 +69,16 @@ public class World {
         return newWord;
     }
 
+    void initializePhysics() {
+        for (Creature creature : creatures) {
+            creature.initializePhysics(physicsSupplier);
+        }
+    }
+
     void update(long currentNanos) {
+        if (lastUpdateNanos == 0) {
+            initializePhysics();
+        }
         long diff = currentNanos - lastUpdateNanos;
 
         for (Creature creature : creatures) {

@@ -3,11 +3,11 @@ package net.barbux.creatures2d;
 public class Triangle2Spider extends Creature {
 
     public Triangle2Spider() {
-        Node node1 = new Node(0, 0.1, 0.55);
-        Node node2 = new Node(1, 0.3, 0.75);
-        Node node3 = new Node(2, 0.5, 0.65);
-        Node node4 = new Node(3, 0.7, 0.75);
-        Node node5 = new Node(4, 0.9, 0.55);
+        Node node1 = new Node(0.1, 0.55);
+        Node node2 = new Node(0.3, 0.75);
+        Node node3 = new Node(0.5, 0.65);
+        Node node4 = new Node(0.7, 0.75);
+        Node node5 = new Node(0.9, 0.55);
 
 
         allNodes.add(node1);

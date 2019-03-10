@@ -6,6 +6,9 @@ import javafx.scene.text.Font;
 import net.barbux.creatures2d.proto.Creatures;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 
 public class Creature {
@@ -14,57 +17,29 @@ public class Creature {
         final Geometry.Vector originalPos;
         final Geometry.Vector p;
         final Geometry.Vector v;
-        final Geometry.Vector f;
-        final int nodeId;
+        int nodeId;
 
         final double size;
         final double weight;
-        double savedEnergy;
 
         Color color = Color.BROWN;
 
-        Node(int id, double x, double y) {
-            this(id, x, y, 1.0, 0.05);
+        Node(double x, double y) {
+            this(x, y, 1.0, 0.05);
         }
 
-        Node(int id, double x, double y, double weight, double size) {
+        Node(double x, double y, double weight, double size) {
             p = new Geometry.Vector(x, y);
             originalPos = new Geometry.Vector(x, y);
             v = new Geometry.Vector(0d, 0d);
-            f = new Geometry.Vector(0d, 0d);
             this.weight = weight;
-            this.nodeId = id;
             this.size = size;
-
-            savedEnergy = getEnergy();
         }
 
         public Node clone() {
-            Node result = new Node(nodeId, originalPos.x, originalPos.y, weight, size);
+            Node result = new Node(originalPos.x, originalPos.y, weight, size);
             result.color = color;
             return result;
-        }
-
-        double getEnergy() {
-            return 0.5 * weight * (v.x * v.x + v.y * v.y) + 9.81 * weight * p.y;
-        }
-
-        public void scaleEnergy(double ratio) {
-            // 0.5Vnew2 + p shoudl equal ratio * (0.5 Vold2 + p)
-            // 0.5 Vnew2 = ratio(0.5 Vold2 + p ) - p
-            double p = 9.81 * this.p.y;
-            double Vold2 =  (v.x * v.x + v.y * v.y);
-            double Vnew2 = 2 * (ratio * (0.5 * Vold2 + p) - p);
-
-            // x2 + y2 = Vold2
-            // t2x2 + t2y2 = Vnew2
-            // t2(x2 + y2) = Vnew2
-            // t2(Vold2) = Vnew2
-            // t2 = Vnew2 / Vold2
-            double t2 = Vnew2 / Vold2;
-            if (t2 > 0) {
-                v.scale(Math.sqrt(t2));
-            }
         }
     }
 
@@ -82,8 +57,9 @@ public class Creature {
         abstract void setExpectedLength(double time);
     }
 
-    static class Bone  extends Connection{
+    static class Bone extends Connection {
         final double length;
+        Color color = Color.BLACK;
 
         Bone(Node node1, Node node2) {
             this(node1, node2, Math.sqrt(Geometry.distance2(node1.p, node2.p)));
@@ -136,17 +112,63 @@ public class Creature {
         }
     }
 
+    class NodeList implements Iterable<Node> {
 
+        private ArrayList<Node> internal = new ArrayList<>();
 
+        public boolean add(Node node) {
+            node.nodeId = internal.size();
+            return internal.add(node);
+        }
 
-    final List<Node> allNodes = new ArrayList<>();
+        public Node remove(int index) {
+            Node removal = internal.remove(index);
+            allBones.removeIf(bone -> bone.node1 == removal || bone.node2 == removal);
+            allMuscles.removeIf(muscle -> muscle.node1 == removal || muscle.node2 == removal);
+            for (int i = index; i < internal.size(); ++i) {
+                internal.get(i).nodeId = i;
+            }
+            return removal;
+        }
+
+        public boolean removeIf(Predicate<? super Node> predicate) {
+            boolean res = internal.removeIf(predicate);
+            allBones.removeIf(bone -> predicate.test(bone.node1) || predicate.test(bone.node2));
+            allMuscles.removeIf(muscle -> predicate.test(muscle.node1) || predicate.test(muscle.node2));
+            return res;
+        }
+
+        public int size() {
+            return internal.size();
+        }
+
+        public Node get(int i) {
+            return internal.get(i);
+        }
+
+        public Stream<Node> stream() {
+            return internal.stream();
+        }
+
+        @Override
+        public Iterator<Node> iterator() {
+            return internal.iterator();
+        }
+    }
+
+    final NodeList allNodes = new NodeList();
     final List<Bone> allBones = new ArrayList<>();
     final List<Muscle> allMuscles = new ArrayList<>();
     int creatureId;
 
-    final Physics physics = new PhysicsWithBoneAsSpring();
+    Physics physics;
 
     Creature() {
+    }
+
+    void initializePhysics(Supplier<Physics> physicsSupplier) {
+        physics = physicsSupplier.get();
+        physics.initialize(this);
     }
 
     void resizeBones() {
@@ -158,8 +180,7 @@ public class Creature {
     }
 
     void update(long nanos) {
-        physics.update(nanos, this);
-
+        physics.update(nanos);
         getFitness();
     }
 
@@ -200,9 +221,9 @@ public class Creature {
     }
 
     void render(GraphicsContext gc, boolean showNumber) {
-        gc.setStroke(Color.BLACK);
         gc.setLineWidth(0.01);
         for (Bone bone : allBones) {
+            gc.setStroke(bone.color);
             gc.strokeLine(bone.node1.p.x, bone.node1.p.y, bone.node2.p.x, bone.node2.p.y);
         }
 
@@ -282,8 +303,8 @@ public class Creature {
         creature.creatureId = protoCreature.getCreatureId();
         Map<Integer, Node> allNodes = new HashMap<>();
         for (Creatures.Node protoNode : protoCreature.getNodesList()) {
-            Node node = new Node(protoNode.getNodeId(), protoNode.getStartX(), protoNode.getStartY(), protoNode.getWeight(), protoNode.getSize());
-            allNodes.put(node.nodeId, node);
+            Node node = new Node(protoNode.getStartX(), protoNode.getStartY(), protoNode.getWeight(), protoNode.getSize());
+            allNodes.put(protoNode.getNodeId(), node);
             creature.allNodes.add(node);
         }
         for (Creatures.Bone protoBone : protoCreature.getBonesList()) {
