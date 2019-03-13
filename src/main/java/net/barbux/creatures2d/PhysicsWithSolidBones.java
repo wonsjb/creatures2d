@@ -15,6 +15,10 @@ import java.util.*;
 public class PhysicsWithSolidBones implements Physics{
 
 
+    public static class Screw2D {
+        // 2D screw are simplified
+    }
+
     @Override
     public void update(long nanos) {
 

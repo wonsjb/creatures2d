@@ -19,7 +19,7 @@ public class PhysicsWithBoneAsSpring implements Physics {
             return 0.5 * node.weight * (node.v.x * node.v.x + node.v.y * node.v.y) + 9.81 * node.weight * node.p.y;
         }
 
-        public void scaleEnergy(double ratio) {
+        void scaleEnergy(double ratio) {
             // 0.5Vnew2 + p shoudl equal ratio * (0.5 Vold2 + p)
             // 0.5 Vnew2 = ratio(0.5 Vold2 + p ) - p
             double p = 9.81 * node.p.y;
@@ -38,9 +38,9 @@ public class PhysicsWithBoneAsSpring implements Physics {
         }
     }
 
-    double currentTimeSeconds;
+    private double currentTimeSeconds;
 
-    void keepInBox(Creature.Node node) {
+    private void keepInBox(Creature.Node node) {
         // bounce
         if (node.p.x < node.size / 2) {
             node.v.x = -node.v.x * 0.85;
@@ -53,13 +53,13 @@ public class PhysicsWithBoneAsSpring implements Physics {
         node.p.y = Math.max(node.size / 2, node.p.y);
     }
 
-    public void applyForce(Creature.Connection connection, double time, double seconds, double power) {
+    private void applyForce(Creature.Connection connection, double time, double seconds, double power) {
         double currentDistance =  Math.sqrt(Geometry.distance2(connection.node1.p, connection.node2.p));
         double previousExpectedLength = connection.expectedLength;
         connection.setExpectedLength(time);
         double diff = connection.expectedLength - currentDistance;
         if (diff < -EPSILON || diff > EPSILON) {
-            double force = diff * 100_000d / currentDistance;
+            double force = diff * SOLID_SPRING_LAMBDA;
             double speed = (connection.expectedLength - previousExpectedLength) / seconds;
             if (speed < 0) {
                 speed = -speed;
@@ -72,8 +72,8 @@ public class PhysicsWithBoneAsSpring implements Physics {
             }
 
             Geometry.Vector diffVector = Geometry.diffVector(connection.node1.p, connection.node2.p);
-            allNodeData.get(connection.node1.nodeId).f.plusEqual(diffVector, force);
-            allNodeData.get(connection.node2.nodeId).f.minusEqual(diffVector, force);
+            allNodeData.get(connection.node1.nodeId).f.plusEqual(diffVector, force / currentDistance);
+            allNodeData.get(connection.node2.nodeId).f.minusEqual(diffVector, force / currentDistance);
         }
     }
 
@@ -92,7 +92,7 @@ public class PhysicsWithBoneAsSpring implements Physics {
             f.y += -g * nodeData.node.weight;
 
             // air resistance
-            f.plusEqual(nodeData.node.v, -airLamda);
+            f.plusEqual(nodeData.node.v, -AIR_LAMBDA);
         }
 
         for (Creature.Bone bone : creature.allBones) {
@@ -117,9 +117,9 @@ public class PhysicsWithBoneAsSpring implements Physics {
             if (node.p.y <= EPSILON + node.size / 2) {
                 final double fx;
                 if (node.v.x < 0) {
-                    fx = 5 * node.weight;
+                    fx = FRICTION_CONSTANT * node.weight;
                 } else if (node.v.x > 0) {
-                    fx = -5 * node.weight;
+                    fx = -FRICTION_CONSTANT * node.weight;
                 } else {
                     fx = 0.0;
                 }
@@ -145,6 +145,8 @@ public class PhysicsWithBoneAsSpring implements Physics {
             double ratio = initialEnergy / finalEnergy;
 
             for (NodeData nodeData : allNodeData) {
+                // kind of a hack: this prevents spring forces to throw the creatures too far.
+                // we reduce the speed of all nodes so that the energy is not greater than it is supposed to be
                 nodeData.scaleEnergy(ratio);
             }
         }
@@ -156,7 +158,7 @@ public class PhysicsWithBoneAsSpring implements Physics {
         }
     }
 
-    List<NodeData> allNodeData = new ArrayList<>();
+    private List<NodeData> allNodeData = new ArrayList<>();
     Creature creature;
 
     @Override
