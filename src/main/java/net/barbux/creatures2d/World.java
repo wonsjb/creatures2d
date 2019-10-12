@@ -87,7 +87,6 @@ public class World {
         long diff = currentNanos - lastUpdateNanos;
 
         parallelExecutor.execute(creatures, creature -> creature.update(diff));
-        //creatures.parallelStream().forEach(creature -> creature.update(diff));
 
         lastUpdateNanos = currentNanos;
     }
