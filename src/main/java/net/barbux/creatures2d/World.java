@@ -14,8 +14,9 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public class World {
-    final List<Creature> creatures = new ArrayList<>();
+    final ArrayList<Creature> creatures = new ArrayList<>();
     final Supplier<Physics> physicsSupplier;
+    final ParallelExecutor parallelExecutor;
 
     long lastUpdateNanos;
 
@@ -27,17 +28,21 @@ public class World {
             creatures.add(creature);
         }
         lastUpdateNanos = 0;
+        parallelExecutor = new ParallelExecutor(Runtime.getRuntime().availableProcessors());
     }
 
     World(Supplier<Physics> physicsSupplier) {
         this.physicsSupplier = physicsSupplier;
         lastUpdateNanos = 0;
+        parallelExecutor = new ParallelExecutor(8);
     }
 
     World(Supplier<Physics> physicsSupplier, Collection<Creature> creatures) {
         this.physicsSupplier = physicsSupplier;
         lastUpdateNanos = 0;
         this.creatures.addAll(creatures);
+        parallelExecutor = new ParallelExecutor(8);
+
     }
 
     public World clone() {
@@ -81,9 +86,8 @@ public class World {
         }
         long diff = currentNanos - lastUpdateNanos;
 
-        for (Creature creature : creatures) {
-            creature.update(diff);
-        }
+        parallelExecutor.execute(creatures, creature -> creature.update(diff));
+        //creatures.parallelStream().forEach(creature -> creature.update(diff));
 
         lastUpdateNanos = currentNanos;
     }
